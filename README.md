@@ -10,11 +10,6 @@ dermatology classifier on HAM10000 (DermaMNIST). No image, file name or per-pati
 ever leaves a hospital. What does leave is protected by differential privacy, secure
 aggregation and mutually-authenticated TLS 1.3.
 
-> **Scope.** This is a proof of concept built to learn and demonstrate federated-learning
-> engineering. "Hospitals" are partitions of a public dataset, the networked runs are on
-> one host (separate processes or hardened containers on isolated networks), and the model
-> is not a medical device. See [what is and isn't done](#honest-status).
-
 <p align="center"><img src="results/plots/aggregation_comparison.png" width="100%"></p>
 
 ## What's inside
