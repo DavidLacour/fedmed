@@ -63,11 +63,11 @@ sequenceDiagram
 | `simulation.py` | in-process runner for benchmarks: same client, strategy and wire code, real byte counts, CodeCarbon |
 | `flower_app/` | the same client code behind Flower's `ClientApp` / `ServerApp` |
 
-## Design decisions worth defending in an interview
+## Design decisions
 
 * **Own transport plus a Flower front-end, not Flower alone.** Flower's SuperLink supports
-  server-side TLS and node authentication with public keys. The posting asks for
-  certificates, access control and authorisation, and building that layer by hand makes
+  server-side TLS and node authentication with public keys. The goal here was
+  certificate-based identity, access control and authorisation, and building that layer by hand makes
   every security decision visible and testable. The Flower app shows that the
   ML code is framework-agnostic.
 * **Algorithm corrections as parameter-space steps.** FedProx (exact proximal step) and

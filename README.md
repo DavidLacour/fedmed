@@ -5,7 +5,7 @@
 ![tests](https://img.shields.io/badge/tests-44%20passing-brightgreen)
 ![status](https://img.shields.io/badge/status-proof%20of%20concept-orange)
 
-**Data stays, AI collaborates, in miniature.** Five simulated hospitals jointly train a
+Five simulated hospitals jointly train a
 dermatology classifier on HAM10000 (DermaMNIST). No image, file name or per-patient label
 ever leaves a hospital. What does leave is protected by differential privacy, secure
 aggregation and mutually-authenticated TLS 1.3.
@@ -14,7 +14,7 @@ aggregation and mutually-authenticated TLS 1.3.
 
 ## What's inside
 
-| Job-posting requirement | What this repo does | Where |
+| Area | What this repo does | Where |
 |---|---|---|
 | FL algorithms and aggregation | FedAvg, FedProx (exact proximal step), SCAFFOLD (control variates); compared on 3 levels of label skew with 2 seeds; local-only and pooled baselines | `train.py`, `strategies.py`, [RESULTS](RESULTS.md#1-aggregation-under-non-iid-data) |
 | Non-IID data | Dirichlet(α) label skew over 5 hospitals; site sizes from 155 to 5,269 images | `data.py`, `results/plots/partition.png` |
@@ -23,9 +23,9 @@ aggregation and mutually-authenticated TLS 1.3.
 | Network security | Own CA, per-hospital client certs, CRL revocation, TLS 1.3 only, certificate-bound EdDSA access tokens (RFC 8705-style), role-based authorisation policy, audit log; **14 attack tests** | `pki.py`, `auth.py`, `server/app.py`, [SECURITY](docs/SECURITY.md) |
 | Data ingestion and quality | On-site validator: corrupt, missing, wrong-size or wrong-mode files, bad labels, exact and near duplicates, low contrast. Detailed report stays local; the coordinator gets k-suppressed counts only | `quality.py` |
 | Communication, energy, scalability | Bytes per round measured on the wire format; fp16, int8 and top-k with error feedback; rounds-to-target; CodeCarbon energy; 3 to 20 sites | `compression.py`, `simulation.py`, [RESULTS](RESULTS.md#3-communication-and-energy) |
-| Docker, K8s, Git and CI/CD | Hardened image (non-root, read-only filesystem, no capabilities); per-hospital isolated networks; Helm chart with NetworkPolicies; GitLab CI (lint, tests, dependency audit, smoke run, image build, helm lint) | `deploy/`, `.gitlab-ci.yml` |
+| Deployment and CI/CD | Hardened image (non-root, read-only filesystem, no capabilities); per-hospital isolated networks; Helm chart with NetworkPolicies; GitLab CI (lint, tests, dependency audit, smoke run, image build, helm lint) | `deploy/`, `.gitlab-ci.yml` |
 | IoT / edge | One hospital runs as a constrained edge node (0.5 CPU, 768 MB) | `deploy/docker/` |
-| Framework knowledge | The same client code also runs as a **Flower** `ClientApp`/`ServerApp` | `flower_app/` |
+| Flower integration | The same client code also runs as a **Flower** `ClientApp`/`ServerApp` | `flower_app/` |
 
 ## Architecture
 

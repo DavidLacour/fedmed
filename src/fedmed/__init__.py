@@ -1,6 +1,6 @@
 """fedmed: a proof-of-concept federated learning platform for medical imaging.
 
-"Data stays, AI collaborates": every hospital keeps its images on its own node.
+Every hospital keeps its images on its own node.
 Only model updates, which may be protected by DP-SGD and secure aggregation, leave the site.
 """
 
