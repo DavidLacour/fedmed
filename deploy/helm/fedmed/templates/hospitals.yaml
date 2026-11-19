@@ -1,0 +1,42 @@
+{{- range .Values.hospitals }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-{{ .name }}
+  labels: {{- include "fedmed.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: hospital-node
+    fedmed/site: {{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app.kubernetes.io/instance: {{ $.Release.Name }}, fedmed/site: {{ .name }} }
+  template:
+    metadata:
+      labels: {{- include "fedmed.labels" $ | nindent 8 }}
+        app.kubernetes.io/component: hospital-node
+        fedmed/site: {{ .name }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { fsGroup: 10001 }
+      containers:
+        - name: node
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: ["node", "--server", "{{ include "fedmed.coordinatorUrl" $ }}", "--site-dir", "/data",
+                 "--cert", "/pki/client.crt", "--key", "/pki/client.key", "--ca", "/pki/ca.crt",
+                 "--token-file", "/pki/token.jwt", "--work-dir", "/work", "--threads", "{{ .threads }}"]
+          securityContext: {{- include "fedmed.securityContext" $ | nindent 12 }}
+          resources: {{- toYaml .resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /data, readOnly: true }
+            - { name: pki, mountPath: /pki, readOnly: true }
+            - { name: work, mountPath: /work }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: {{ .dataClaim }}, readOnly: true }
+        - name: pki
+          secret: { secretName: {{ .name }}-pki, defaultMode: 0440 }
+        - name: work
+          emptyDir: {}
+{{- end }}

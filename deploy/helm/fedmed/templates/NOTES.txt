@@ -1,0 +1,6 @@
+fedmed {{ .Chart.AppVersion }} installed as "{{ .Release.Name }}".
+{{- if .Values.coordinator.enabled }}
+Coordinator: {{ include "fedmed.coordinatorUrl" . }}  (mTLS required; plain HTTPS clients are refused)
+Follow training:  kubectl logs -f deploy/{{ .Release.Name }}-coordinator
+{{- end }}
+Hospitals: {{ range .Values.hospitals }}{{ .name }} {{ end }}

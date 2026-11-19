@@ -1,0 +1,65 @@
+{
+ "config": {
+  "name": "local_a0.5_s1",
+  "algorithm": "fedavg",
+  "n_sites": 5,
+  "alpha": 0.5,
+  "rounds": 100,
+  "local_epochs": 1,
+  "local_steps": 50,
+  "batch_size": 32,
+  "lr": 0.1,
+  "mu": 0.01,
+  "noise_multiplier": null,
+  "max_grad_norm": 1.0,
+  "delta": 1e-05,
+  "class_weight_power": 0.5,
+  "compression": "none",
+  "secagg": false,
+  "seed": 1,
+  "data_path": "data/raw/dermamnist.npz",
+  "track_energy": false,
+  "torch_threads": 2
+ },
+ "result": {
+  "per_site": [
+   {
+    "loss": 4.065907131585099,
+    "accuracy": 0.41496259351620945,
+    "balanced_accuracy": 0.40486669616504034,
+    "macro_f1": 0.2636530247083277,
+    "n": 2005
+   },
+   {
+    "loss": 1.319544705131702,
+    "accuracy": 0.5805486284289276,
+    "balanced_accuracy": 0.48689633865680637,
+    "macro_f1": 0.40953534745431536,
+    "n": 2005
+   },
+   {
+    "loss": 1.6350670869213684,
+    "accuracy": 0.6239401496259351,
+    "balanced_accuracy": 0.36560062947627625,
+    "macro_f1": 0.271299088587823,
+    "n": 2005
+   },
+   {
+    "loss": 0.9912677565120402,
+    "accuracy": 0.656857855361596,
+    "balanced_accuracy": 0.4510502742026361,
+    "macro_f1": 0.3906346639706676,
+    "n": 2005
+   },
+   {
+    "loss": 1.2784408911802525,
+    "accuracy": 0.5920199501246883,
+    "balanced_accuracy": 0.3381893679033675,
+    "macro_f1": 0.2717056396607653,
+    "n": 2005
+   }
+  ],
+  "mean_accuracy": 0.5736658354114714,
+  "mean_balanced_accuracy": 0.40932066128082534
+ }
+}

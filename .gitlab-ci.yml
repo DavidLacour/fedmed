@@ -1,0 +1,75 @@
+# GitLab CI: lint -> test -> smoke -> build -> deploy-check
+# The CI badge in README.md points at this pipeline.
+stages: [lint, test, smoke, build, deploy-check]
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHONUNBUFFERED: "1"
+
+default:
+  image: python:3.12-slim
+  cache:
+    key: pip-$CI_COMMIT_REF_SLUG
+    paths: [.cache/pip]
+
+.install: &install
+  - pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.2,<3"
+  - pip install -e ".[dev]"
+
+lint:
+  stage: lint
+  script:
+    - pip install "ruff>=0.5"
+    - ruff check src tests experiments
+    - ruff format --check src tests || echo "formatting drift (non-blocking)"
+
+unit-and-security-tests:
+  stage: test
+  script:
+    - *install
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports: { junit: report.xml }
+
+dependency-audit:
+  stage: test
+  allow_failure: true          # report, do not block: upstream CVEs need triage, not a red pipeline
+  script:
+    - pip install pip-audit
+    - *install
+    - pip-audit --skip-editable
+
+smoke-simulation:
+  stage: smoke
+  script:
+    - *install
+    - python -c "from fedmed.data import download_dermamnist; download_dermamnist()"
+    - python experiments/run_experiments.py --suite smoke --workers 3 --force
+  artifacts:
+    paths: [results/runs/smoke_*.json]
+    expire_in: 1 week
+
+docker-image:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - docker build -f deploy/docker/Dockerfile -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker run --rm "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" --help
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+        docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+      fi
+
+helm-lint:
+  stage: deploy-check
+  image: alpine/helm:3.16.2
+  script:
+    - helm lint deploy/helm/fedmed
+    - helm template demo deploy/helm/fedmed > rendered.yaml
+  artifacts:
+    paths: [rendered.yaml]

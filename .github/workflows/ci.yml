@@ -1,0 +1,28 @@
+# Mirror of .gitlab-ci.yml for GitHub-hosted copies of the repo.
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.2,<3"
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests experiments
+      - run: pytest
+      - run: python -c "from fedmed.data import download_dermamnist; download_dermamnist()"
+      - run: python experiments/run_experiments.py --suite smoke --workers 3 --force
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f deploy/docker/Dockerfile -t fedmed:ci .
+      - run: docker run --rm fedmed:ci --help
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - run: helm lint deploy/helm/fedmed && helm template demo deploy/helm/fedmed > /dev/null

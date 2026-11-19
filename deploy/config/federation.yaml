@@ -1,0 +1,20 @@
+# Federation run definition, read by the coordinator.
+run_id: derm-poc-001
+participants: [hospital-a, hospital-b, hospital-c, hospital-d, hospital-e]
+rounds: 30
+algorithm: fedprox        # fedavg | fedprox | scaffold
+mu: 0.01
+lr: 0.1
+batch_size: 32
+local_steps: 50
+compression: none         # none | fp16 | int8 | topk:0.1  (ignored when secagg is on)
+secagg: true              # pairwise-mask secure aggregation; server only sees the sum
+dp:                       # per-site DP-SGD (Opacus). Remove this block to disable.
+  noise_multiplier: 1.0
+  max_grad_norm: 1.0
+  delta: 1.0e-5
+class_weight_power: 0.5
+max_update_norm: 200.0
+seed: 0
+benchmark: data/sites/_benchmark/test.npz   # public test set held by the coordinator
+out_dir: runs/coordinator

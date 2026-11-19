@@ -1,0 +1,112 @@
+# A 5-hospital federation on one Docker host: one coordinator + five hospital nodes.
+#
+#   make certs data            # PKI + per-hospital data folders (run once on the host)
+#   docker compose -f deploy/docker/docker-compose.yml up --build
+#
+# Isolation model:
+#   * every hospital sits on its own bridge network, shared only with the coordinator,
+#     so hospitals cannot reach each other (as with separate institutions);
+#   * each container mounts only its own data folder (read-only) and its own key + token;
+#   * the coordinator gets the token *verification* key, never the signing key or CA key.
+# hospital-e has an "edge" profile: 0.5 CPU and 768 MB RAM, like a small on-prem box.
+
+x-node: &node
+  build: { context: ../.., dockerfile: deploy/docker/Dockerfile }
+  image: fedmed:latest
+  depends_on: [coordinator]
+  restart: "no"
+  user: "${FEDMED_UID:-1000}:${FEDMED_GID:-1000}"   # host owner of the 0600 key files
+  read_only: true
+  tmpfs: ["/work:mode=1777", "/tmp:mode=1777"]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+services:
+  coordinator:
+    build: { context: ../.., dockerfile: deploy/docker/Dockerfile }
+    image: fedmed:latest
+    command: ["server", "--config", "/config/federation.yaml", "--policy", "/config/policy.yaml",
+              "--pki", "/pki", "--port", "8443"]
+    volumes:
+      - ../config/federation.docker.yaml:/config/federation.yaml:ro
+      - ../config/policy.yaml:/config/policy.yaml:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/crl.pem:/pki/crl.pem:ro
+      - ../../certs/server.crt:/pki/server.crt:ro
+      - ../../certs/server.key:/pki/server.key:ro
+      - ../../certs/token_signing.pub:/pki/token_signing.pub:ro
+      - ../../data/sites/_benchmark:/benchmark:ro
+      - ../../runs/coordinator:/work/runs/coordinator
+    user: "${FEDMED_UID:-1000}:${FEDMED_GID:-1000}"
+    ports: ["8443:8443"]   # published so nodes on *other machines* can join
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    networks: [net-a, net-b, net-c, net-d, net-e]
+
+  hospital-a:
+    <<: *node
+    command: &nodecmd ["node", "--server", "https://coordinator:8443", "--site-dir", "/data",
+                       "--cert", "/pki/client.crt", "--key", "/pki/client.key", "--ca", "/pki/ca.crt",
+                       "--token-file", "/pki/token.jwt", "--work-dir", "/work", "--threads", "2"]
+    volumes:
+      - ../../data/sites/hospital-a:/data:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/hospital-a.crt:/pki/client.crt:ro
+      - ../../certs/hospital-a.key:/pki/client.key:ro
+      - ../../certs/tokens/hospital-a.jwt:/pki/token.jwt:ro
+    networks: [net-a]
+
+  hospital-b:
+    <<: *node
+    command: *nodecmd
+    volumes:
+      - ../../data/sites/hospital-b:/data:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/hospital-b.crt:/pki/client.crt:ro
+      - ../../certs/hospital-b.key:/pki/client.key:ro
+      - ../../certs/tokens/hospital-b.jwt:/pki/token.jwt:ro
+    networks: [net-b]
+
+  hospital-c:
+    <<: *node
+    command: *nodecmd
+    volumes:
+      - ../../data/sites/hospital-c:/data:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/hospital-c.crt:/pki/client.crt:ro
+      - ../../certs/hospital-c.key:/pki/client.key:ro
+      - ../../certs/tokens/hospital-c.jwt:/pki/token.jwt:ro
+    networks: [net-c]
+
+  hospital-d:
+    <<: *node
+    command: *nodecmd
+    volumes:
+      - ../../data/sites/hospital-d:/data:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/hospital-d.crt:/pki/client.crt:ro
+      - ../../certs/hospital-d.key:/pki/client.key:ro
+      - ../../certs/tokens/hospital-d.jwt:/pki/token.jwt:ro
+    networks: [net-d]
+
+  hospital-e:   # constrained edge node
+    <<: *node
+    command: ["node", "--server", "https://coordinator:8443", "--site-dir", "/data",
+              "--cert", "/pki/client.crt", "--key", "/pki/client.key", "--ca", "/pki/ca.crt",
+              "--token-file", "/pki/token.jwt", "--work-dir", "/work", "--threads", "1"]
+    cpus: 0.5
+    mem_limit: 768m
+    volumes:
+      - ../../data/sites/hospital-e:/data:ro
+      - ../../certs/ca.crt:/pki/ca.crt:ro
+      - ../../certs/hospital-e.crt:/pki/client.crt:ro
+      - ../../certs/hospital-e.key:/pki/client.key:ro
+      - ../../certs/tokens/hospital-e.jwt:/pki/token.jwt:ro
+    networks: [net-e]
+
+networks:
+  net-a: {}
+  net-b: {}
+  net-c: {}
+  net-d: {}
+  net-e: {}

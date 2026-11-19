@@ -1,0 +1,11 @@
+.venv
+data
+certs
+runs
+results
+.git
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+flower_app

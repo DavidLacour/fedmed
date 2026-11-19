@@ -1,0 +1,36 @@
+{{- if .Values.networkPolicy.enabled }}
+# Hospitals: no ingress at all; egress only to the coordinator (+ DNS).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-hospital-isolation
+  labels: {{- include "fedmed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: hospital-node }
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress:
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: coordinator }
+      ports: [{ protocol: TCP, port: {{ .Values.coordinator.service.port }} }]
+    - ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+{{- if .Values.coordinator.enabled }}
+---
+# Coordinator: ingress only on its HTTPS port; no egress except DNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-coordinator
+  labels: {{- include "fedmed.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: coordinator }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports: [{ protocol: TCP, port: {{ .Values.coordinator.service.port }} }]
+  egress:
+    - ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+{{- end }}
+{{- end }}

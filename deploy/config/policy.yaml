@@ -1,0 +1,14 @@
+# Authorisation policy: the single source of truth for who may do what.
+# A site's token must carry the same role; change a role here to withdraw access
+# without touching certificates.
+roles:
+  trainer: [task:read, model:read, update:submit, metrics:submit, quality:submit, secagg:register, secagg:read]
+  observer: [status:read]
+sites:
+  hospital-a: trainer
+  hospital-b: trainer
+  hospital-c: trainer
+  hospital-d: trainer
+  hospital-e: trainer
+  auditor: observer
+revoked_tokens: []        # token "jti" values

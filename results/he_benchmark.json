@@ -1,0 +1,21 @@
+{
+  "he": {
+    "n_sites": 5,
+    "dim": 94599,
+    "plain_bytes_per_site": 378396,
+    "he_bytes_per_site": 7951112,
+    "expansion": 21.01267455258512,
+    "keygen_s": 0.9657991090002724,
+    "encrypt_s_per_site": 0.2007851275999201,
+    "aggregate_s": 0.027093191999938426,
+    "decrypt_s": 0.05327733600006468,
+    "max_abs_error": 2.1245173620343394e-08
+  },
+  "secagg": {
+    "bytes_per_site": 756895,
+    "mask_s_per_site": 0.005014087199924688,
+    "aggregate_s": 0.0016635510000924114,
+    "max_abs_error": 1.3783574104309082e-07
+  },
+  "plain_bytes_per_site": 378500
+}

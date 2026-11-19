@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fedmed-imaging"
+version = "0.1.0"
+description = "Proof-of-concept federated learning platform for medical imaging: non-IID aggregation, DP-SGD, secure aggregation, mTLS."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "numpy>=1.26",
+    "torch>=2.2",
+    "opacus>=1.5",
+    "pillow>=10",
+    "scikit-learn>=1.4",
+    "cryptography>=42",
+    "pyjwt[crypto]>=2.8",
+    "aiohttp>=3.9",
+    "httpx>=0.27",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+experiments = ["matplotlib>=3.8", "codecarbon>=2.5", "tenseal>=0.3.14"]
+flower = ["flwr[simulation]>=1.20"]
+dev = ["pytest>=8", "ruff>=0.5", "pytest-timeout>=2.3"]
+
+[project.scripts]
+fedmed = "fedmed.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fedmed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+timeout = 300
+filterwarnings = [
+    "ignore:The HMAC key:UserWarning",
+    "ignore:Secure RNG turned off:UserWarning",
+    "ignore:Full backward hook:UserWarning",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S"]
+ignore = ["S101", "S311", "B008", "B905", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S"]
+"experiments/*" = ["S"]
+

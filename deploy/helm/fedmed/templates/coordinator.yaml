@@ -1,0 +1,76 @@
+{{- if .Values.coordinator.enabled }}
+{{- $participants := list }}
+{{- range .Values.hospitals }}{{ $participants = append $participants .name }}{{ end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-coordinator-config
+  labels: {{- include "fedmed.labels" . | nindent 4 }}
+data:
+  federation.yaml: |
+    {{- $fed := deepCopy .Values.coordinator.federation }}
+    {{- if $participants }}{{ $_ := set $fed "participants" $participants }}{{ end }}
+    {{- toYaml $fed | nindent 4 }}
+  policy.yaml: |
+    roles:
+      {{- toYaml .Values.coordinator.policy.roles | nindent 6 }}
+    sites:
+      {{- range .Values.hospitals }}
+      {{ .name }}: trainer
+      {{- end }}
+    revoked_tokens: {{ toJson .Values.coordinator.policy.revoked_tokens }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-coordinator
+  labels: {{- include "fedmed.labels" . | nindent 4 }}
+    app.kubernetes.io/component: coordinator
+spec:
+  replicas: 1                     # single writer of the global model
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: coordinator }
+  template:
+    metadata:
+      labels: {{- include "fedmed.labels" . | nindent 8 }}
+        app.kubernetes.io/component: coordinator
+      annotations:
+        checksum/config: {{ toYaml .Values.coordinator | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: { fsGroup: 10001 }
+      containers:
+        - name: coordinator
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["server", "--config", "/config/federation.yaml", "--policy", "/config/policy.yaml",
+                 "--pki", "/pki", "--port", "{{ .Values.coordinator.service.port }}"]
+          ports: [{ name: https, containerPort: {{ .Values.coordinator.service.port }} }]
+          readinessProbe:
+            tcpSocket: { port: https }
+            periodSeconds: 5
+          securityContext: {{- include "fedmed.securityContext" . | nindent 12 }}
+          resources: {{- toYaml .Values.coordinator.resources | nindent 12 }}
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: pki, mountPath: /pki, readOnly: true }
+            - { name: work, mountPath: /work }
+      volumes:
+        - name: config
+          configMap: { name: {{ .Release.Name }}-coordinator-config }
+        - name: pki
+          secret: { secretName: {{ .Values.coordinator.pkiSecret }}, defaultMode: 0440 }
+        - name: work
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-coordinator
+  labels: {{- include "fedmed.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.coordinator.service.type }}
+  selector: { app.kubernetes.io/instance: {{ .Release.Name }}, app.kubernetes.io/component: coordinator }
+  ports: [{ name: https, port: {{ .Values.coordinator.service.port }}, targetPort: https }]
+{{- end }}

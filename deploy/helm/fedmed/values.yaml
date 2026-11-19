@@ -1,0 +1,67 @@
+# Two ways to use this chart:
+#  * all-in-one PoC: coordinator.enabled=true and a list of hospitals (one namespace, one cluster);
+#  * realistic split: install with coordinator.enabled=true and hospitals=[] at the coordinator site,
+#    and at each hospital install with coordinator.enabled=false, one entry in hospitals, and
+#    coordinator.externalUrl pointing at the coordinator's public endpoint.
+image:
+  repository: registry.gitlab.com/your-group/fedmed
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+coordinator:
+  enabled: true
+  externalUrl: ""             # set when nodes run in another cluster, e.g. https://fl.example.org:8443
+  service:
+    type: ClusterIP
+    port: 8443
+  # Secret with keys: ca.crt, crl.pem, server.crt, server.key, token_signing.pub
+  pkiSecret: fedmed-coordinator-pki
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits: { cpu: "2", memory: 2Gi }
+  federation:
+    run_id: derm-poc-001
+    rounds: 30
+    algorithm: fedprox
+    mu: 0.01
+    lr: 0.1
+    batch_size: 32
+    local_steps: 50
+    compression: none
+    secagg: true
+    dp: { noise_multiplier: 1.0, max_grad_norm: 1.0, delta: 1.0e-5 }
+    class_weight_power: 0.5
+    max_update_norm: 200.0
+    out_dir: /work/runs
+  policy:
+    roles:
+      trainer: [task:read, model:read, update:submit, metrics:submit, quality:submit, secagg:register, secagg:read]
+      observer: [status:read]
+    revoked_tokens: []
+
+# Each hospital needs a Secret "<name>-pki" with keys: ca.crt, client.crt, client.key, token.jwt
+# (make k8s-secrets creates them), and a PVC holding that hospital's images + labels.csv.
+hospitals:
+  - name: hospital-a
+    dataClaim: hospital-a-data
+    threads: 2
+    resources: { requests: { cpu: 500m, memory: 1Gi }, limits: { cpu: "2", memory: 2Gi } }
+  - name: hospital-b
+    dataClaim: hospital-b-data
+    threads: 2
+    resources: { requests: { cpu: 500m, memory: 1Gi }, limits: { cpu: "2", memory: 2Gi } }
+  - name: hospital-c
+    dataClaim: hospital-c-data
+    threads: 2
+    resources: { requests: { cpu: 500m, memory: 1Gi }, limits: { cpu: "2", memory: 2Gi } }
+  - name: hospital-d
+    dataClaim: hospital-d-data
+    threads: 2
+    resources: { requests: { cpu: 500m, memory: 1Gi }, limits: { cpu: "2", memory: 2Gi } }
+  - name: hospital-e          # edge-class node
+    dataClaim: hospital-e-data
+    threads: 1
+    resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { cpu: 500m, memory: 768Mi } }
+
+networkPolicy:
+  enabled: true               # hospitals may only talk to the coordinator; nothing talks to hospitals

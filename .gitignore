@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.cache/
+# never commit keys, tokens or patient-like data
+certs/
+data/
+/runs/
+*.key
+*.jwt
+flower_app/flower_global_model.npy
+results/experiments.log
+
+# private, not for the public repo
+task.txt
+docs/APPLICATION.md
